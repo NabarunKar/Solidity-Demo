@@ -20,7 +20,10 @@ contract ERC721Enumerable is ERC721 {
     /// @notice Count NFTs tracked by this contract
     /// @return A count of valid NFTs tracked by this contract, where each one of
     ///  them has an assigned and queryable owner not equal to the zero address
-    function totalSupply() external view returns (uint256) {
+    
+    
+    // return the total supply of the allTokens array
+    function totalSupply() public view returns (uint256) {
         return _allTokens.length;
     }
 
@@ -45,11 +48,37 @@ contract ERC721Enumerable is ERC721 {
         super._mint(to, tokenId); // calling the mint function of ERC721.sol
         
         // Now we need to add tokens to the (a) Owner (b) _allTokens
-        _addTokensToTotalSupply(tokenId);
-
+        _addTokensToAllTokenEnumeration(tokenId);
+        _addTokensToOwnerEnumeration(to, tokenId);
     }
 
-    function _addTokensToTotalSupply(uint256 tokenId) private {
+    // add tokens to the _allTokens array and set the position of the token's indexes
+    function _addTokensToAllTokenEnumeration(uint256 tokenId) private {
+        _allTokensIndex[tokenId] = _allTokens.length; // the position is kept track of
         _allTokens.push(tokenId);
+    }
+
+    function _addTokensToOwnerEnumeration(address to, uint256 tokenId) private {
+        // we wanna:
+        // a. add address and tokenId to _ownedTokens
+        // b. ownedTokensIndex tokenId set to address of ownedTokens position
+        // c. call this function as part of the minting process.
+        _ownedTokensIndex[tokenId] = _ownedTokens[to].length; // step b
+        _ownedTokens[to].push(tokenId);                      // step a
+    }
+
+    // now let's write two more functions:
+    // 1. one that returns tokenByIndex
+    // 2. one that returns tokenOfOwnerByOwnerIndex
+
+    // function 1 -> is going to search through indexes for us, a helper function
+    function tokenByIndex(uint256 index) public view returns(uint256) {
+        require(index < totalSupply(), 'Index out of bounds!');
+        return _allTokens[index];
+    }
+
+    function tokenOfOwnerByIndex(address owner, uint index) public view returns(uint256) {
+        require(index < balanceOf(owner), 'Owner Index out of bounds!');
+        return _ownedTokens[owner][index];
     }
 }

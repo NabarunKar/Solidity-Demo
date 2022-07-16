@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import './ERC721Connector.sol';
 
-contract Kryptobird is ERC721Connector {
+contract KryptoBird is ERC721Connector { // this is inheritance 
 
     string[] public kryptoBirdz; // array to store our NFTs
 
@@ -18,7 +18,7 @@ contract Kryptobird is ERC721Connector {
         uint _id = kryptoBirdz.length - 1;
 
         //running the mint function from ERC721.sol:
-        _mint(msg.sender, _id);
+        _mint(msg.sender, _id); // msg.sender = first address on Ganache
         _kryptoBirdzExists[_kryptoBird] = true;
     }
 

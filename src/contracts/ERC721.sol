@@ -49,6 +49,7 @@ contract ERC721 {
 
     function ownerOf(uint256 _tokenId) external view returns (address) {
         address owner = _tokenOwner[_tokenId];
+        require(owner!=address(0), 'Owner address does not exist.');
         return owner;
     }
 

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import './ERC165.sol';
+import './interfaces/IERC721.sol';
+
     /*
     We want to keep track of in the MINTING FUNCTION:    
         a. nft to point to an address
@@ -12,18 +15,23 @@ pragma solidity ^0.8.0;
 
     */
 
-contract ERC721 {
-    // log
-    event Transfer( address indexed from, 
-                    address indexed to, 
-                    uint256 indexed tokenId);
+contract ERC721 is ERC165, IERC721 {
+    // log: commented out since its a part of IERC721 now
+    // event Transfer( address indexed from, 
+    //                 address indexed to, 
+    //                 uint256 indexed tokenId);
 
 
     // mapping creates hash table of key pair values
+
     //Mapping from token id to owner:
     mapping(uint => address) private _tokenOwner;
+
     //Mapping from owner to number of owned tokens:
     mapping(address => uint) private _ownedTokensCount;
+
+    //Mapping from tokenId to approved addresses
+    mapping(uint256 => address) private _tokenApprovals;
 
 
     // balanceOf function
@@ -34,7 +42,7 @@ contract ERC721 {
     /// @param _owner An address for whom to query the balance
     /// @return The number of NFTs owned by `_owner`, possibly zero
 
-    function balanceOf(address _owner) public view returns(uint256) {
+    function balanceOf(address _owner) public override view returns(uint256) {
         require(_owner!=address(0), 'Owner address does not exist.');
         return _ownedTokensCount[_owner];
     }
@@ -47,7 +55,7 @@ contract ERC721 {
     /// @param _tokenId The identifier for an NFT
     /// @return The address of the owner of the NFT
 
-    function ownerOf(uint256 _tokenId) external view returns (address) {
+    function ownerOf(uint256 _tokenId) public view override returns (address) {
         address owner = _tokenOwner[_tokenId];
         require(owner!=address(0), 'Owner address does not exist.');
         return owner;
@@ -72,15 +80,43 @@ contract ERC721 {
         _ownedTokensCount[to] += 1;
 
         //emit logs
-        emit Transfer(address(0), to, tokenId); 
+        // emit Transfer(address(0), to, tokenId); 
     }
 
-    //Copied from eips.ethereum.org:
-    /// @notice Transfers the ownership of an NFT from one address to another address
-    /// @dev This works identically to the other function with an extra data parameter,
-    ///  except this function just sets data to "".
-    /// @param _from The current owner of the NFT
-    /// @param _to The new owner
-    /// @param _tokenId The NFT to transfer
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+    // MISSED FUNCTIONS
+    function _transferFrom(address _from, address _to, uint256 _tokenId) internal {
+        require(_to != address(0), 'Error - ERC721 transfer to the zero address');
+        require(ownerOf(_tokenId) == _from, 'Trying to transfer a token the address does not possess');
+
+        _ownedTokensCount[_from] -= 1;
+        _ownedTokensCount[_to] += 1;
+
+        _tokenOwner[_tokenId] = _to;
+
+        emit Transfer(_from, _to, _tokenId);
+    }
+
+    function transferFrom(address _from, address _to, uint256 _tokenId) override public {
+        require(isApprovedOrOwner(msg.sender, _tokenId));
+        _transferFrom(_from, _to, _tokenId);
+    }
+    
+    // 1. require that the person approving is the owner
+    // 2. we are approving an address to a token (tokenId)
+    // 3. require that we cant approve sending tokens of the owner to the owner
+    // 4. update the map of the approval addresses
+
+    function approve(address _to, uint256 tokenId) public {
+        address owner = ownerOf(tokenId);
+        require(_to != owner, 'Error - approval to current owner');
+        require(msg.sender == owner, 'Current caller is not the owner of the token.');
+        _tokenApprovals[tokenId] = _to;
+        emit Approval(owner, _to, tokenId);
+    }
+
+    function isApprovedOrOwner(address spender, uint256 tokenId) internal view returns(bool) {
+        require(_exists(tokenId), 'token does not exist');
+        address owner = ownerOf(tokenId);
+        return(spender==owner);
+    }
 }

@@ -1,6 +1,4 @@
-const {artifacts} = require("truffle");
 const {assert} = require('chai')
-// const { Item } = require('react-bootstrap/lib/Breadcrumb')
 
 const KryptoBird = artifacts.require('./Kryptobird');
 
